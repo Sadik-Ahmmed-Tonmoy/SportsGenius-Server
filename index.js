@@ -1,7 +1,8 @@
 const express = require('express')
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
-const app = express()
+const app = express();
+const stripe = require("stripe")("sk_test_51NHrkfBJXdTYCil7l72wRD1LcsrrZiiC3c4CNczcUqEVlDNrTF14r82qKJhJtGkNhWqr7MPYIECjRXnUrHCAN0oK00hJgoMJeZ");
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const port = process.env.PORT || 5000;
@@ -51,6 +52,7 @@ async function run() {
     // all collections
     const userCollection = client.db("sportsGenius").collection("users");
     const sportsCollection = client.db("sportsGenius").collection("sports");
+    const cartCollection = client.db("sportsGenius").collection("carts");
     // jwt
     app.post("/jwt", (req, res) => {
       const email = req.body
@@ -126,7 +128,6 @@ async function run() {
       const result = await userCollection.updateOne(filter, updateDoc);
       res.send(result);
     })
-
 
     // Approve class
     app.patch('/users/approveClass/:id', async (req, res) => {
@@ -255,13 +256,18 @@ async function run() {
 //   res.send(result)
 // } )
 
-    
-
+    // get get classes using sort based on total student(descending)
     app.get("/class/sort", async (req, res) => {
       const result = await sportsCollection.find().sort({ totalStudent: -1 }).toArray();
       const sixData = result.slice(0, 6)
       res.send(sixData)
     })
+    // // get get instructors using sort based on total student(descending)
+    // app.get("/topInstructor", async (req, res) => {
+    //   const result = await sportsCollection.find().sort({ totalStudent: -1 }).toArray();
+    //   const sixData = result.slice(0, 6)
+    //   res.send(sixData)
+    // })
 
     // insert/upload to db
     app.post("/add-a-class", async (req, res) => {
@@ -269,6 +275,44 @@ async function run() {
       const result = await sportsCollection.insertOne(data)
       res.send(result)
     })
+
+  // =============
+  // cartCollection
+  // save to cart
+app.post("/carts", async (req, res) => {
+  const item = req.body;
+  const result = await cartCollection.insertOne(item);
+  res.send(result)
+})
+
+// get cart data
+app.get("/carts", async(req, res) => {
+  const email = req.query.email;
+  if(!email){
+    req.send ([]);
+  }
+  const query = {email: email}
+  const result = await cartCollection.find(query).toArray();
+  res.send(result)
+})
+
+
+// create-payment-intent (PAYMENT)
+// app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+// const  {price}  = req.body;
+//   const amount = parseFloat(price) * 100
+// console.log(amount);
+//   // Create a PaymentIntent with the order amount and currency
+//   const paymentIntent = await stripe.paymentIntents.create({
+//     amount: amount,
+//     currency: "usd",
+//     payment_method_types: ["card"]
+//   });
+
+//   res.send({
+//     clientSecret: paymentIntent.client_secret,
+//   });
+// });
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
