@@ -191,6 +191,7 @@ async function run() {
       const result = { instructor: user?.role === 'instructor' }
       res.send(result);
     })
+
     // check student
     app.get("/users/isStudent/:email", async (req, res) => {
       const email = req.params.email;
@@ -219,6 +220,13 @@ async function run() {
       const sports = sportsCollection.find()
       const result = await sports.toArray()
       res.send(result)
+    })
+
+     // get all instructors
+    app.get("/instructor", async (req, res) => {
+      const filter = { role: 'instructor' }
+      const result = await userCollection.find(filter).toArray();  
+      res.send(result);
     })
 
     // get single data 
